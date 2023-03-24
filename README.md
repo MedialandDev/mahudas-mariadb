@@ -3,7 +3,7 @@
 
 ## Dependencies
 + mahudas^0.1.2
-+ mariadb^3.0.2
++ mariadb^3.1.1
 
 
 ### As a plugin
@@ -33,7 +33,7 @@ module.exports = {
     password: 'password',
     database: '',
     charset: 'utf8mb4',
-    timezone: 'UTC+08:00',
+    timezone: '+08:00',
     acquireTimeout: 20000,
   },
 }
@@ -78,6 +78,29 @@ const delete_where = {
 await app.mariadb.delete('table_name', delete_where);
 // > true
 ```
+
+#### Transaction
+```js
+const transactionConn = await app.mariadb.beginTransaction();
+const insert_data = {
+    foo: 'bar',
+}
+await app.mariadb.insert('table_name', insert_data);
+await transactionConn.commit();
+
+// 因為 transactionConn 已經 commit，為了重複使用connection，所以用參數的方式帶入現有的 connection
+const deleteTransactionConn = await app.mariadb.beginTransaction(transactionConn);
+const delete_where = {
+    id: 2
+}
+await app.mariadb.delete('table_name', delete_where);
+deleteTransactionConn.rollback();
+// > no delete
+
+// 最後記得要手動釋出 connection
+deleteTransactionConn.end();
+```
+
 #### 一般使用
 ```js
 // 要先取得 connection，在用 conn 去 query
